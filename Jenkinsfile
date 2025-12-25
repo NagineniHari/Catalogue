@@ -24,14 +24,13 @@ pipeline {
                 }
             }
         }
-        stage('Stage') {
+        stage('Install Dependencies') {
             steps {
-                
                 script { 
-
                 sh  """
-                 echo "Staging"
-                    """
+                 npm install 
+                 
+                 """
                 }
             }
         }
