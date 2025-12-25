@@ -31,7 +31,6 @@ pipeline {
 
                 sh  """
                  echo "Staging"
-                 echo "$TRAINER"
                     """
                 }
             }
