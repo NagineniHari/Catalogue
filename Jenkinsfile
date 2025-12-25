@@ -8,6 +8,9 @@ pipeline {
     environment {
         COURSE="Jenkins"
         appVersion= ""
+        ACCOUNT_ID = "996058207546"
+        PROJECT = "safety"
+        COMPONENT = "catalogue"
     }
         options {
         timeout(time: 15, unit: 'MINUTES') 
@@ -37,11 +40,16 @@ pipeline {
         stage('Docker Image Build') {
           steps {
                 script { 
-                sh  """
-                 docker build -t catalogue:${appVersion} .
-                 docker images
+withAWS(region:'us-east-1',credentials:'aws-creds') {
+  sh """
+  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 
+${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
+  docker build -t ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
+  docker images
+  docker push ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
+"""
+}
 
-                 """
                 }
             }
         }
@@ -58,25 +66,6 @@ pipeline {
                 }
             }
         }
-        // approvals added 
-        stage('Deploy') {
-            // input {
-            //     message "Should we continue?"
-            //     ok "Yes, we should."
-            //     submitter "alice,bob"
-            //     parameters {
-            //         string(name: 'PERSON', defaultValue: 'Mr Jenkins', description: 'Who should I say hello to?')
-            //     }
-            // }
-          when {
-           expression { "$params.DEPLOY" =="true"}
-          }
-
-            steps {
-                echo "Deploying"
-            }
-        }
-    }
 
     post{
         always{
