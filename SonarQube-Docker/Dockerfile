@@ -2,7 +2,7 @@
 FROM sonarqube:community
 
 # Expose SonarQube web port
-EXPOSE 8080
+EXPOSE 9090
 
 # Volumes for persistence (important for AWS)
 VOLUME ["/opt/sonarqube/data", "/opt/sonarqube/extensions", "/opt/sonarqube/logs"]
