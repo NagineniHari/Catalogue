@@ -29,13 +29,24 @@ pipeline {
                 script { 
                 sh  """
                  npm install 
-                 
+
+                 """
+                }
+            }
+        }
+        stage('Docker Image Build') {
+          steps {
+                script { 
+                sh  """
+                 docker build -t catalogue:${appVersion} .
+                 docker images
+
                  """
                 }
             }
         }
                 stage('Test') {
-            steps {
+                  steps {
                 
                 script { 
 
