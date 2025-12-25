@@ -37,6 +37,17 @@ pipeline {
                 }
             }
         }
+
+        stage('Unit Test') {
+            steps {
+                script { 
+                sh  """
+                 npm test
+
+                 """
+                }
+            }
+        }
         stage('Docker Image Build') {
           steps {
                 script { 
