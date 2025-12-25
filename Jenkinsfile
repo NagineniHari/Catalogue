@@ -64,6 +64,7 @@ withAWS(region:'us-east-1',credentials:'aws-creds') {
                 }
             }
         }
+    }
 
     post{
         always{
@@ -81,5 +82,4 @@ withAWS(region:'us-east-1',credentials:'aws-creds') {
            echo 'Pipeline is aborted executing more time'
         }
     }
-}
 }
