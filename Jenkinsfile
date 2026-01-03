@@ -64,7 +64,7 @@ pipeline {
         stage('Quality Gate Check') {
             
             steps {
-                timeout(time: 1, unit: 'HoURS') {
+                timeout(time: 1, unit: 'HOURS') {
                 // Pauses the pipeline and waits for the analysis to be completed and quality gate status to be returned
                   def qg = waitForQualityGate abortPipeline: true // Aborts the pipeline if the Quality Gate fails (e.g., "red" status)
             }
