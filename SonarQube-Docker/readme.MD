@@ -17,10 +17,23 @@ Score (A–E) representing how easy the code is to maintain, calculated from cod
 Percentage of code executed by automated tests, showing how well the codebase is tested.
 
 ### Sonarqube start using Docker
-docker run -d \
-  --name sonarqube \
-  -p 9000:9000 \
-  -v sonarqube_data:/opt/sonarqube/data \
-  -v sonarqube_extensions:/opt/sonarqube/extensions \
-  -v sonarqube_logs:/opt/sonarqube/logs \
-  sonarqube:community
+Create EC2 Instance (t3.small or t3.large)
+
+\\ ## Install docker \\
+
+yum install -y yum-utils
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+yum install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ec2-user
+restart EC2 Instance
+
+sudo sysctl -w vm.max_map_count=262144
+docker pull sonarqube
+docker run -d --name sonarqube-db -e POSTGRES_USER=sonar -e POSTGRES_PASSWORD=sonar -e POSTGRES_DB=sonarqube postgres:alpine
+docker run -d --name sonarqube -p 9000:9000 --link sonarqube-db:db -e SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonarqube -e SONAR_JDBC_USERNAME=sonar -e SONAR_JDBC_PASSWORD=sonar sonarqube
+
+try to login  this url using  default user/password ---> http://sonarqube.naginenihariaws.store:9000/
+default username and password: admin/admin
+updated default password and login home page 
