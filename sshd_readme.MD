@@ -3,7 +3,7 @@ sudo dnf update -y openssl\* openssh\* -y
 sudo dnf update -y 'openssl*' 'openssh*'
 
 sudo systemctl restart sshd
-sshd -t
+Check the ssh connection using this command ---> sshd -t 
 
 
 ## Docker
