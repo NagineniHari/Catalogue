@@ -48,6 +48,18 @@ pipeline {
                 }
             }
         }
+        //Here you need to select scanner tool and send the analysis to server
+        stage('Sonar Scans') {
+            environment {
+                def scannerHome = tool 'sonar-8.0'
+            }
+        steps {
+            script {
+                withSonarQubeEnv('Sonar-server') {
+                sh "${scannerHome}/bin/sonar-scanner"
+        }
+        }
+        }
         stage('Docker Image Build') {
           steps {
                 script { 

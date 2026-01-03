@@ -37,3 +37,6 @@ docker run -d --name sonarqube -p 9000:9000 --link sonarqube-db:db -e SONAR_JDBC
 try to login  this url using  default user/password ---> http://sonarqube.naginenihariaws.store:9000/
 default username and password: admin/admin
 updated default password and login home page 
+
+plugin,tools and system
+create sonar-jenkins token in sonar admin and update in jenkins
