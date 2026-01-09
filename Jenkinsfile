@@ -1,77 +1,66 @@
 pipeline {
-    // This steps are Pre-build sections
     agent {
-    node {
-        label "AGENT-1"
+        node {
+            label "AGENT-1"
+        }
     }
-    }
+
     environment {
-        COURSE="Jenkins"
-        appVersion= ""
-        ACCOUNT_ID = "996058207546"
-        PROJECT = "safety"
-        COMPONENT = "catalogue"
+        COURSE      = "Jenkins"
+        appVersion  = ""
+        ACCOUNT_ID  = "996058207546"
+        PROJECT     = "safety"
+        COMPONENT   = "catalogue"
     }
-        options {
-        timeout(time: 15, unit: 'MINUTES') 
+
+    options {
+        timeout(time: 15, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
-   // This is build section part
+
     stages {
+
         stage('Read Version') {
             steps {
-                script { 
-                def packageJSON = readJSON file: 'package.json'
-                appVersion=packageJSON.version
-                echo "app version: ${appVersion}"
+                script {
+                    def packageJSON = readJSON file: 'package.json'
+                    appVersion = packageJSON.version
+                    echo "App Version: ${appVersion}"
                 }
             }
         }
+
         stage('Install Dependencies') {
             steps {
-                script { 
-                sh  """
-                 npm install 
-
-                 """
-                }
+                sh 'npm install'
             }
         }
 
         stage('Unit Test') {
             steps {
-                script { 
-                sh  """
-                 npm test
+                sh 'npm test'
+            }
+        }
 
-                 """
+        stage('Sonar Scan') {
+            steps {
+                script {
+                    def scannerHome = tool 'sonar-8.0'
+                    withSonarQubeEnv('sonar-server') {
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
                 }
             }
-        }
-        //Here you need to select scanner tool and send the analysis to server
-        stage('sonar scans') {
-            environment {
-                def scannerHome = tool 'sonar-8.0'
-            }
-        steps {
-            script {
-                withSonarQubeEnv('sonar-server') {
-                sh "${scannerHome}/bin/sonar-scanner"
-        }
-        }
-        }
         }
 
         stage('Quality Gate Check') {
             steps {
                 timeout(time: 1, unit: 'HOURS') {
-                     script {
-                // Pauses the pipeline and waits for the analysis to be completed and quality gate status to be returned
-                    def qg = waitForQualityGate abortPipeline: true // Aborts the pipeline if the Quality Gate fails (e.g., "red" status)
-                     }
+                    script {
+                        waitForQualityGate abortPipeline: true
+                    }
+                }
             }
-
-        }
         }
 
         stage('Dependabot Security Gate') {
@@ -83,91 +72,75 @@ pipeline {
             }
 
             steps {
-                script{
-                    /* Use sh """ when you want to use Groovy variables inside the shell.
-                    Use sh ''' when you want the script to be treated as pure shell. */
-                    sh '''
-                    echo "Fetching Dependabot alerts..."
+                sh '''
+                echo "Fetching Dependabot alerts..."
 
-                    response=$(curl -s \
-                        -H "Authorization: token ${GITHUB_TOKEN}" \
-                        -H "Accept: application/vnd.github+json" \
-                        "${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dependabot/alerts?per_page=100")
+                response=$(curl -s \
+                    -H "Authorization: token ${GITHUB_TOKEN}" \
+                    -H "Accept: application/vnd.github+json" \
+                    "${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/dependabot/alerts?per_page=100")
 
-                    echo "${response}" > dependabot_alerts.json
+                echo "${response}" > dependabot_alerts.json
 
-                    high_critical_open_count=$(echo "${response}" | jq '[.[] 
-                        | select(
-                            .state == "open"
-                            and (.security_advisory.severity == "high"
-                                or .security_advisory.severity == "critical")
-                        )
-                    ] | length')
+                high_critical_open_count=$(echo "${response}" | jq '[.[] 
+                    | select(
+                        .state == "open" and
+                        (.security_advisory.severity == "high" or
+                         .security_advisory.severity == "critical")
+                    )
+                ] | length')
 
-                    echo "Open HIGH/CRITICAL Dependabot alerts: ${high_critical_open_count}"
+                echo "Open HIGH/CRITICAL alerts: ${high_critical_open_count}"
 
-                    if [ "${high_critical_open_count}" -gt 0 ]; then
-                        echo "❌ Blocking pipeline due to OPEN HIGH/CRITICAL Dependabot alerts"
-                        echo "Affected dependencies:"
-                        echo "$response" | jq '.[] 
-                        | select(.state=="open" 
-                        and (.security_advisory.severity=="high" 
-                        or .security_advisory.severity=="critical"))
-                        | {dependency: .dependency.package.name, severity: .security_advisory.severity, advisory: .security_advisory.summary}'
-                        exit 1
-                    else
-                        echo "✅ No OPEN HIGH/CRITICAL Dependabot alerts found"
-                    fi
-                    '''
-                    
+                if [ "${high_critical_open_count}" -gt 0 ]; then
+                    echo "❌ Blocking pipeline due to security vulnerabilities"
+                    exit 1
+                else
+                    echo "✅ No HIGH/CRITICAL vulnerabilities found"
+                fi
+                '''
+            }
+        }
+
+        stage('Docker Image Build & Push') {
+            steps {
+                script {
+                    withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                        sh """
+                        aws ecr get-login-password --region us-east-1 \
+                        | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
+
+                        docker build -t ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
+                        docker push ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
+                        """
+                    }
                 }
             }
         }
 
-        stage('Docker Image Build') {
-          steps {
-                script { 
-withAWS(region:'us-east-1',credentials:'aws-creds') {
-  sh """
-  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com
-  docker build -t ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion} .
-  docker images
-  docker push ${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com/${PROJECT}/${COMPONENT}:${appVersion}
-"""
-}
-                }
-            }
-        }
-                stage('Test') {
-                  steps {
-                
-                script { 
-
-                sh  """
-                 echo "Testiing"
-                 env
-
-                    """
-                }
+        stage('Test') {
+            steps {
+                sh '''
+                echo "Testing environment variables"
+                env
+                '''
             }
         }
     }
 
-    post{
-        always{
-            echo 'I will always say Hello again!'
+    post {
+        always {
+            echo 'Pipeline completed'
             cleanWs()
         }
         success {
-            echo 'I will run if  success !'
+            echo 'Pipeline succeeded ✅'
         }
-
         failure {
-            echo 'I will run if failure !'
+            echo 'Pipeline failed ❌'
         }
         aborted {
-           echo 'Pipeline is aborted executing more time'
+            echo 'Pipeline aborted ⛔'
         }
     }
 }
-
