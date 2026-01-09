@@ -8,8 +8,8 @@ RUN npm install
 FROM node:20.19.5-alpine3.22
 WORKDIR /opt/server
 ## We are added this one part of image scanning
-RUN apk update && \
-    apk upgrade --no-cache
+# RUN apk update && \
+#     apk upgrade --no-cache
 RUN addgroup -S roboshop && adduser -S roboshop -G roboshop 
 EXPOSE 8080
 LABEL com.project="roboshop" \
