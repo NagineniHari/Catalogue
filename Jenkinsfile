@@ -1,8 +1,8 @@
 @Library('Jenkins-shared-library') _
 
 def configMap = [
-    PROJECT : "safety"
-    COMPONENT : "catalogue"
+    project : "safety"
+    component : "catalogue"
     ]
 
 // if branch is not equals to main, then run CI pipeline
