@@ -1,7 +1,7 @@
 @Library('Jenkins-shared-library') _
 
 def configMap = [
-    project: "safety"
+    project: "safety",
     component: "catalogue"
     ]
 
