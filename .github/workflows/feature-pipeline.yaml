@@ -2,11 +2,8 @@ name: feature-pipeline
 on: [push]
 jobs:
   feature-pipeline:
-    runs-on: self-hosted
-    steps:
-    - name: call reuse feature-pipeline
-      uses: NagineniHari/Workflows/.github/workflows/feature-nodejs-pipeline.yaml@main
-      with:
-       project: safety
-       component: catalogue
-       environment: dev
+    uses: NagineniHari/Workflows/.github/workflows/feature-nodejs-pipeline.yaml@main
+    with:
+      project: safety
+      component: catalogue
+      environment: dev
