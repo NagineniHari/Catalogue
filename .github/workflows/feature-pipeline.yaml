@@ -6,4 +6,4 @@ jobs:
     with:
       project: safety
       component: catalogue
-      environment: dev
+      
